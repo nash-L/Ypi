@@ -20,15 +20,13 @@ class Account {
     }
 
     /**
+     * @title 登陆接口
      * @url GET /login
      * @param name string 名称
      * @param password string 密码
      * @return array{
      *              name: string 名称,
-     *              age: array[array{
-     *                  text: string 名称,
-     *                  value: int 值
-     *              }] 年龄,
+     *              age: int 年龄,
      *              password: string 密码
      *          } 返回数据
      */

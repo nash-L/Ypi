@@ -11,22 +11,39 @@ use FastRoute\Dispatcher;
 use function FastRoute\simpleDispatcher;
 
 class Router {
-    private $_dispatcher;
-    public function __construct($base_namespace, $mode, $map_file)
+    private $_dispatcher, $_md;
+    public function __construct($base_namespace, $mode, $map_file, $doc_dir)
     {
-        $controllers = self::_getControllers($base_namespace);
-        $nodes = RouterNode::getControllerNodes($controllers);
         if ($mode === 'online' && is_file($map_file)) {
-            $this->_dispatcher = unserialize(file_get_contents($map_file));
+            $dispatcher = unserialize(file_get_contents($map_file));
+            $this->_dispatcher = $dispatcher['dispatcher'];
+            $this->_md = $dispatcher['doc_md'];
         } else {
-            $this->_dispatcher = simpleDispatcher(function ($r) use (&$nodes) {
+            $controllers = self::_getControllers($base_namespace);
+            $nodes = RouterNode::getControllerNodes($controllers);
+            $mds = array();
+            if (is_dir($doc_dir)) {
+                $mdfiles = scandir($doc_dir);
+                foreach ($mdfiles as $k => $v) {
+                    if ($v[0] !== '.' && is_file($doc_dir . DS . $v)) {
+                        $v_name = $v;
+                        $v_encode = mb_detect_encoding($v, array('ASCII','GB2312','GBK','UTF-8'), true);
+                        if ($v_encode !== 'UTF-8') {
+                            $v_name = iconv($v_encode, 'UTF-8', $v_name);
+                        }
+                        $mds[$v_name] = file_get_contents($doc_dir . DS . $v);
+                    }
+                }
+            }
+            $this->_md = $mds;
+            $this->_dispatcher = simpleDispatcher(function ($r) use (&$nodes, &$mds) {
                 foreach ($nodes as $node) {
                     $r->addRoute($node->getMethod(), $node->getPath(), $node);
                 }
-                $r->addRoute('GET', '/-document', array(array(Router::class, 'showDocument'), array('nodes' => $nodes)));
+                $r->addRoute('GET', '/-document', array(array(Router::class, 'showDocument'), array('nodes' => $nodes, 'mds' => $mds)));
             });
             if ($mode === 'online') {
-                file_put_contents($map_file, serialize($this->_dispatcher));
+                file_put_contents($map_file, serialize(array('dispatcher' => $this->_dispatcher, 'doc_md' => $this->_md)));
             }
         }
     }
@@ -58,11 +75,12 @@ class Router {
         }
     }
 
-    public static function showDocument($nodes)
+    public static function showDocument($nodes, $mds)
     {
         if (App::config()->get('DOCUMENT')) {
             Rest::changeMode('document');
             header('Content-Type: text/html;charset=utf-8');
+            $cover_info = App::config()->get('DOCUMENT_COVER');
             require ROOT . DS . 'Ypi' . DS . 'document-html' . DS . 'tpl.phtml';
         } else {
             throw new Exception('无法找到资源', 404);

@@ -21,7 +21,7 @@ class Rest {
             });
 
             App::service('router', function () {
-                return new Router(App::config()->base_namespace, App::config()->mode, App::config()->map_file);
+                return new Router(App::config()->base_namespace, App::config()->mode, App::config()->map_file, App::config()->document_dir);
             });
 
             App::service('inter', function () {

@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Api文档</title>
+    <link href="https://cdn.bootcss.com/highlight.js/9.12.0/styles/rainbow.min.css" rel="stylesheet">
     <style>
-        html {
+        html, tt, code, kbd, samp {
             font-family: Consolas, "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif;
         }
         body {
@@ -100,6 +101,14 @@
         .version-block {
             padding: 20px;
         }
+        .version-block > h1,
+        .version-block > h2,
+        .version-block > h3,
+        .version-block > h4,
+        .version-block > h5,
+        .version-block > h6 {
+            margin-top: 0;
+        }
         .version-block .version {
             font-size: 18px;
             font-weight: 700;
@@ -151,6 +160,11 @@
     <div id="api-view">
         <div id="paths">
             <ul>
+                <li v-for="(md, index) in mds">
+                    <a :href="'#' + index" @click="api_index = index" :class="{selected : index == api_index}">
+                        {{index}}
+                    </a>
+                </li>
                 <li v-for="(api, index) in apis">
                     <a :href="'#' + index" @click="api_index = index" :class="{selected : index == api_index}">
                         <span>{{api.title}}</span>
@@ -159,6 +173,14 @@
                     </a>
                 </li>
             </ul>
+        </div>
+        <div class="contents" v-for="(md, index) in mds" v-show="index == api_index">
+            <div class="title">
+                {{index}}
+            </div>
+            <div class="version-blocks">
+                <div class="version-block" v-html="readMarkdown(md)"></div>
+            </div>
         </div>
         <div class="contents" v-for="(api, index) in apis" v-show="index == api_index">
             <div class="title">
@@ -173,19 +195,23 @@
         </div>
     </div>
     <script src="https://cdn.bootcss.com/vue/2.5.13/vue.js"></script>
+    <script src="https://cdn.bootcss.com/marked/0.3.9/marked.min.js"></script>
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
     <script>
+        hljs.initHighlightingOnLoad();
+
         Vue.component('api-version', {
             template: '<div>' +
-                '<div class="version"><a href="javascript:;" @click="need_show = !need_show">Version: {{version}} {{(show || need_show) ? \'-\' : \'+\'}} <small>detail</small></a></div>' +
+                '<div class="version"><a href="javascript:;" @click="need_show = !need_show">版本: {{version}} {{(show || need_show) ? \'-\' : \'+\'}} <small>详情</small></a></div>' +
                     '<div class="content" v-show="show || need_show">' +
-                    '<div class="date" v-if="body.date">Date: {{body.date}}</div>' +
-                    '<div class="author" v-if="body.author">Author: {{body.author}}</div>' +
-                    '<div class="phone" v-if="body.phone">Phone: {{body.phone}}</div>' +
+                    '<div class="date" v-if="body.date">日期: {{body.date}}</div>' +
+                    '<div class="author" v-if="body.author">作者: {{body.author}}</div>' +
+                    '<div class="phone" v-if="body.phone">电话: {{body.phone}}</div>' +
                     '<div class="param" v-if="body.param || body.init_param">' +
-                        '<param-list title="Input:" :attrs="{Param:\'name\', DataType:\'type\', Required:\'require\', Remark:\'remark\'}" :initparams="body.init_param" :params="body.param"></param-list>' +
+                        '<param-list title="请求参数:" :attrs="{属性:\'name\', 数据类型:\'type\', 必填:\'require\', 描述:\'remark\'}" :initparams="body.init_param" :params="body.param"></param-list>' +
                     '</div>' +
                     '<div class="data" v-if="body.data">' +
-                        '<param-list title="Output:" :attrs="{Param:\'name\', DataType:\'type\', Remark:\'remark\'}" :params="{code: {name:\'code\', type:\'int\', remark:\'\'}, data: body.data, msg: {name:\'msg\', type:\'string\', remark:\'\'}}"></param-list>' +
+                        '<param-list title="返回参数:" :attrs="{属性:\'name\', 数据类型:\'type\', 描述:\'remark\'}" :params="{code: {name:\'code\', type:\'int\', remark:\'\'}, data: body.data, msg: {name:\'msg\', type:\'string\', remark:\'\'}}"></param-list>' +
                     '</div>' +
                 '</div>' +
             '</div>',
@@ -200,11 +226,11 @@
         Vue.component('param-list', {
             template: '<table>' +
                     '<caption v-if="title">{{title}}</caption>' +
-                    '<caption v-else><button @click="flag = !flag;">{{flag ? \'hide\' : \'show\'}}</button></caption>' +
+                    '<caption v-else><button @click="flag = !flag;">{{flag ? \'收回\' : \'展开\'}}</button></caption>' +
                     '<thead v-show="flag">' +
                         '<tr>' +
                             '<th v-for="(attr, name) in attrs">{{name}}</th>' +
-                            '<th>Detail</th>' +
+                            '<th>详情</th>' +
                         '</tr>' +
                     '</thead>' +
                     '<tbody v-show="flag">' +
@@ -268,18 +294,25 @@
 
         var vue = new Vue({
             data: function(){
-                var hash_index = window.location.hash.substring(1);
+                var hash_index = decodeURI(window.location.hash.substring(1));
                 return {
                     apis: <?=json_encode($nodes)?>,
-                    api_index: hash_index ? hash_index : 0
+                    api_index: hash_index ? hash_index : 0,
+                    mds: <?=json_encode($mds)?>
                 };
             },
             computed: {
                 hostname: function(){
                     return window.location.protocol + '//' + window.location.hostname;
                 }
+            },
+            methods: {
+                readMarkdown: function(markdown){
+                    return marked(markdown);
+                }
             }
         });
+
         vue.$mount('#api-view');
     </script>
 </body>

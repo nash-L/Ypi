@@ -2,8 +2,9 @@
 
 return array(
     'BASE_NAMESPACE' => 'App\\Controllers',
-    'MODE' => 'online', // debug online
-    'DOCUMENT' => false,
+    'MODE' => 'debug', // debug online
+    'DOCUMENT' => true,
+    'DOCUMENT_DIR' => ROOT . DS . 'doc',
     'MAP_FILE' => ROOT . DS . 'runtime' . DS . 'map.source',
     'I18N_DIR' => ROOT . DS . 'runtime' . DS . 'i18n',
 
