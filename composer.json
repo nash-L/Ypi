@@ -1,0 +1,29 @@
+{
+    "name": "nash/ypi",
+    "description": "一个用来设计API项目的框架",
+    "version": "1.0.0",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name":"Nash"
+        }
+    ],
+    "require": {
+        "nikic/fast-route": "^1.2",
+        "rdlowrey/auryn": "^1.4",
+        "php": ">=5.4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Ypi\\": "Ypi/",
+            "App\\": "App/"
+        }
+    },
+    "repositories": {
+        "packagist": {
+            "type": "composer",
+            "url": "https://packagist.phpcomposer.com"
+        }
+    }
+}

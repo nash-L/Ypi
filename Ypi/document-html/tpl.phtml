@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Api文档</title>
+    <style>
+        html {
+            font-family: Consolas, "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif;
+        }
+        body {
+            position: absolute;
+            height: 100%;
+            left: 0;
+            right: 0;
+            font-family: Consolas, "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif;
+        }
+        ul, li, html, body {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            font-size: 13px;
+            color: #666;
+        }
+        #paths a {
+            display: block;
+        }
+        a {
+            text-decoration: transparent;
+            color: inherit;
+        }
+        a.selected {
+            background: #ddd;
+        }
+        a:hover {
+            text-decoration: #000;
+        }
+        .method {
+            display: inline-block;
+            font-weight: 700;
+            width: 2em;
+        }
+        .method.GET {
+            color: #7ed321;
+        }
+        .method.POST {
+            color: #f5a623;
+        }
+        .method.PUT {
+            color: #4a90e2;
+        }
+        .method.PATCH {
+            color: #808080;
+        }
+        .method.DELETE {
+            color: #ed4b48;
+        }
+        #paths {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 250px;
+            bottom: 0;
+            border-right: 1px solid #ddd;
+            overflow: auto;
+        }
+        #paths a {
+            padding: 10px 10px;
+            overflow: hidden;
+            text-overflow:ellipsis;
+            white-space: nowrap;
+        }
+        .contents {
+            position: absolute;
+            left: 251px;
+            right: 0;
+            top: 0;
+            bottom: 0;
+        }
+        .title {
+            position: absolute;
+            font-size: 20px;
+            padding: 0 20px;
+            line-height: 55px;
+            border-bottom: 1px solid #ddd;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #fff;
+        }
+        .version-blocks {
+            position: absolute;
+            top: 55px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: auto;
+        }
+        .version-block {
+            padding: 20px;
+        }
+        .version-block .version {
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .version-block .content {
+            padding: 20px;
+            line-height: 1.8;
+        }
+        table {
+            border-collapse:collapse;
+        }
+        table thead th {
+            background-color: #8066a0;
+            color: #fff;
+            border-bottom-width: 0;
+        }
+        table td {
+            color: #000;
+        }
+        table tr, table th {
+            border-width: 1px;
+            border-style: solid;
+            border-color: #8066a0;
+        }
+        table td, table th {
+            padding: 5px 10px;
+            font-size: 12px;
+            font-family: Verdana;
+            font-weight: bold;
+        }
+        table caption {
+            text-align: left;
+        }
+        button {
+            background: #8066a0;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            outline: none;
+            padding: 5px 10px;
+            font-size: 12px;
+            font-family: Verdana;
+            font-weight: bold;
+            min-width: 5em;
+        }
+    </style>
+</head>
+<body>
+    <div id="api-view">
+        <div id="paths">
+            <ul>
+                <li v-for="(api, index) in apis">
+                    <a :href="'#' + index" @click="api_index = index" :class="{selected : index == api_index}">
+                        <span>{{api.title}}</span>
+                        <span class="method" :class="api.method">{{api.method}}</span>
+                        <span class="path">{{api.path}}</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="contents" v-for="(api, index) in apis" v-show="index == api_index">
+            <div class="title">
+                <span class="method" :class="api.method">{{api.method}}</span>
+                <span class="path">{{hostname}}{{api.path}}</span>
+            </div>
+            <div class="version-blocks">
+                <div v-for="(body, version, num_index) in api.docs" class="version-block">
+                    <api-version :body="body" :version="version" :show="num_index <= 0"></api-version>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.bootcss.com/vue/2.5.13/vue.js"></script>
+    <script>
+        Vue.component('api-version', {
+            template: '<div>' +
+                '<div class="version"><a href="javascript:;" @click="need_show = !need_show">Version: {{version}} {{(show || need_show) ? \'-\' : \'+\'}} <small>detail</small></a></div>' +
+                    '<div class="content" v-show="show || need_show">' +
+                    '<div class="date" v-if="body.date">Date: {{body.date}}</div>' +
+                    '<div class="author" v-if="body.author">Author: {{body.author}}</div>' +
+                    '<div class="phone" v-if="body.phone">Phone: {{body.phone}}</div>' +
+                    '<div class="param" v-if="body.param || body.init_param">' +
+                        '<param-list title="Input:" :attrs="{Param:\'name\', DataType:\'type\', Required:\'require\', Remark:\'remark\'}" :initparams="body.init_param" :params="body.param"></param-list>' +
+                    '</div>' +
+                    '<div class="data" v-if="body.data">' +
+                        '<param-list title="Output:" :attrs="{Param:\'name\', DataType:\'type\', Remark:\'remark\'}" :params="{code: {name:\'code\', type:\'int\', remark:\'\'}, data: body.data, msg: {name:\'msg\', type:\'string\', remark:\'\'}}"></param-list>' +
+                    '</div>' +
+                '</div>' +
+            '</div>',
+            props: ['body', 'show', 'version'],
+            data: function(){
+                return {
+                    need_show: false
+                };
+            }
+        });
+
+        Vue.component('param-list', {
+            template: '<table>' +
+                    '<caption v-if="title">{{title}}</caption>' +
+                    '<caption v-else><button @click="flag = !flag;">{{flag ? \'hide\' : \'show\'}}</button></caption>' +
+                    '<thead v-show="flag">' +
+                        '<tr>' +
+                            '<th v-for="(attr, name) in attrs">{{name}}</th>' +
+                            '<th>Detail</th>' +
+                        '</tr>' +
+                    '</thead>' +
+                    '<tbody v-show="flag">' +
+                        '<template v-if="initparams" v-for="(item, index) in initparams">' +
+                            '<tr>' +
+                                '<td v-for="(attr, name) in attrs">{{getAttr(item, attr)}}</td>' +
+                                '<td><param-list v-if="getLength(item.sub_param)" :attrs="attrs" :params="item.sub_param"></param-list></td>' +
+                            '</tr>' +
+                        '</template>' +
+                        '<template v-for="(item, index) in params">' +
+                            '<tr>' +
+                                '<td v-for="(attr, name) in attrs">{{getAttr(item, attr)}}</td>' +
+                                '<td><param-list v-if="getLength(item.sub_param)" :attrs="attrs" :params="item.sub_param"></param-list></td>' +
+                            '</tr>' +
+                        '</template>' +
+                    '</tbody>' +
+                '</table>',
+            props: ['params', 'initparams', 'title', 'attrs'],
+            data: function(){
+                return {
+                    flag: true && this.title
+                };
+            },
+            methods: {
+                getLength: function(obj, lenType = 0){
+                    if (obj) {
+                        if ('number' == typeof obj.length) {
+                            return obj.length * lenType;
+                        }
+                        return Object.getOwnPropertyNames(obj).length;
+                    }
+                    return 0;
+                },
+                getAttr: function(param, attr){
+                    if (attr === 'type') {
+                        switch (param[attr]) {
+                            case 'raw': return 'string';
+                            case 'ip': return 'string<ip>';
+                            case 'mac': return 'string<mac>';
+                            case 'url': return 'string<url>';
+                            case 'email': return 'string<email>';
+                            case 'bool': return 'int(0,1)';
+                            case 'date': return 'string<date>';
+                            case 'time': return 'string<time>';
+                            case 'datetime': return 'string<datetime>';
+                            case 'array':
+                                if ('string' == typeof param.sub_param) {
+                                    return 'array[' + param.sub_param + ']';
+                                }
+                                break;
+                            case 'string': case 'int': case 'float':
+                                if (this.getLength(param.sub_param, 1)) {
+                                    return param[attr] + '(' + param.sub_param.join(',') + ')';
+                                }
+                        }
+                    }
+                    return param[attr];
+                }
+            }
+        });
+
+        var vue = new Vue({
+            data: function(){
+                var hash_index = window.location.hash.substring(1);
+                return {
+                    apis: <?=json_encode($nodes)?>,
+                    api_index: hash_index ? hash_index : 0
+                };
+            },
+            computed: {
+                hostname: function(){
+                    return window.location.protocol + '//' + window.location.hostname;
+                }
+            }
+        });
+        vue.$mount('#api-view');
+    </script>
+</body>
+</html>
